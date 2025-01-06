@@ -50,7 +50,7 @@ jobs:
 
     - name: Build Docker image
       run: |
-        docker build -t quentin-grst/pipelines:latest .
+        docker build -t quentingrt/pipelines:latest .
 
     - name: Log in to Docker Hub
       uses: docker/login-action@v2
@@ -60,7 +60,7 @@ jobs:
 
     - name: Push Docker image
       run: |
-        docker push quentin-grst/pipelines:latest
+        docker push quentingrt/pipelines:latest
 
     - name: Deploy with Docker Compose
       run: |
