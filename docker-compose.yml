@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  web:
+    image: quentingrt/pipelines:latest
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - ENV=production
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - web
+    restart: always
