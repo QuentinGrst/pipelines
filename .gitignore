@@ -1,0 +1,16 @@
+# Environnements virtuels
+venv/
+env/
+ENV/
+
+# Fichiers compilés
+__pycache__/
+*.pyc
+
+# Fichiers de configuration
+*.env
+
+# Dossiers de déploiement
+dist/
+build/
+*.egg-info/
