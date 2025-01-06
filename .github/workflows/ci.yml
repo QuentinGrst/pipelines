@@ -46,7 +46,7 @@ jobs:
 
     - name: Generate documentation with pydoc
       run: |
-        pydoc -w app.main
+        python -m pydoc -w app.main
 
     - name: Build Docker image
       run: |
