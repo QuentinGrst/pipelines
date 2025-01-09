@@ -1,22 +1,27 @@
+version: '3.8'
+
 services:
   app:
     build:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "5000:5000"
-    volumes:
-      - ./app:/app
-      - ./docs:/app/docs # Documentation générée montée dans le conteneur
-    environment:
-      - FLASK_ENV=development
+      - "8000:8000" # Flask expose le port 8000
+    restart: always
+    networks:
+      - pipeline_network
 
   nginx:
     image: nginx:latest
     ports:
-      - "80:80"
+      - "80:80" # NGINX expose le port 80
     volumes:
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
-      - ./docs:/app/docs # Documentation montée dans le conteneur NGINX
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf # Montre le fichier de configuration
     depends_on:
       - app
+    networks:
+      - pipeline_network
+
+networks:
+  pipeline_network:
+    driver: bridge
