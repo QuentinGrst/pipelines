@@ -70,10 +70,6 @@ jobs:
       run: |
         docker push quentingrt/pipelines:latest
 
-    - name: Check Docker Images
-      run: |
-        docker images
-
     - name: Deploy to remote server
       if: github.ref == 'refs/heads/main'
       uses: appleboy/ssh-action@v0.1.6
@@ -83,13 +79,8 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: 2222
         script: |
-          # Accéder au répertoire du projet
           mkdir -p /path/to/your/project
           cd /path/to/your/project
-          
-          # Récupérer les dernières modifications
           git pull origin main
-
-          # Relancer les conteneurs Docker
           docker-compose down
           docker-compose up -d
