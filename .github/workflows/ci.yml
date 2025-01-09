@@ -74,6 +74,14 @@ jobs:
       run: |
         docker images
 
+    - name: Test SSH connection
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh -o StrictHostKeyChecking=no ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }} "echo 'SSH connection successful'"
+
+
     - name: Deploy to remote server
       if: github.ref == 'refs/heads/main'
       uses: appleboy/ssh-action@v0.1.6
