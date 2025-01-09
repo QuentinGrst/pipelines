@@ -46,7 +46,15 @@ jobs:
 
     - name: Generate documentation with pydoc
       run: |
+        mkdir -p docs
         python -m pydoc -w app.main
+        mv app.main.html docs/
+
+    - name: Upload documentation artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: documentation
+        path: docs/
 
     - name: Build Docker image
       run: |
