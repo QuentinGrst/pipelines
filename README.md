@@ -98,10 +98,3 @@ Les contributions sont les bienvenues ! Veuillez :
 Licence
 
 Ce projet est sous licence MIT. Consultez le fichier LICENSE pour plus d'informations.
-
-
----
-
-**Suggestions :**
-- Si des parties spécifiques du projet nécessitent des détails supplémentaires, n'hésitez pas à me le signaler.
-- Voulez-vous automatiser la génération de ce README avec un script Python ? 😊 &#8203;:
