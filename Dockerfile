@@ -2,25 +2,23 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
-# Installer les dépendances système nécessaires
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends gcc build-essential && \
+    apt-get install -y --no-install-recommends gcc build-essential openssh-server && \
+    mkdir /var/run/sshd && \
+    echo "root:25082001" | chpasswd && \
+    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    sed -i 's/UsePAM yes/UsePAM no/' /etc/ssh/sshd_config && \
     rm -rf /var/lib/apt/lists/*
 
-# Copier les fichiers de dépendances
 COPY requirements.txt requirements-dev.txt ./
+RUN pip install --upgrade pip && \
+    pip install -r requirements.txt && \
+    pip install -r requirements-dev.txt
 
-# Installer les dépendances Python
-RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
-RUN pip install -r requirements-dev.txt
-
-# Copier tout le projet dans le conteneur
 COPY . .
-RUN python -c "import app.main"
 
-# Exposer le port utilisé par Gunicorn
-EXPOSE 8000
+RUN chmod +x /app/entrypoint.sh
 
-# Commande pour lancer Gunicorn
-CMD ["gunicorn", "app.main:app", "--bind", "0.0.0.0:8000"]
+EXPOSE 8000 22
+
+CMD ["/app/entrypoint.sh"]

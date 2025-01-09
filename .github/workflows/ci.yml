@@ -74,25 +74,20 @@ jobs:
       run: |
         docker images
 
-    - name: Test SSH connection
-      run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh -o StrictHostKeyChecking=no ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }} "echo 'SSH connection successful'"
-
-
     - name: Deploy to remote server
       if: github.ref == 'refs/heads/main'
       uses: appleboy/ssh-action@v0.1.6
       with:
         host: ${{ secrets.REMOTE_HOST }}
-        username: ${{ secrets.REMOTE_USER }}
+        username: root
         key: ${{ secrets.SSH_PRIVATE_KEY }}
-        port: 22
+        port: 2222
         script: |
-          # Préparer le répertoire du projet sur le serveur
+          # Accéder au répertoire du projet
+          mkdir -p /path/to/your/project
           cd /path/to/your/project
+          
+          # Récupérer les dernières modifications
           git pull origin main
 
           # Relancer les conteneurs Docker
