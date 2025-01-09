@@ -73,3 +73,17 @@ jobs:
     - name: Check Docker Images
       run: |
         docker images
+
+    - name: Deploy to remote server
+      if: github.ref == 'refs/heads/main'
+      uses: appleboy/ssh-action@v0.1.6
+      with:
+        host: ${{ secrets.REMOTE_HOST }}
+        username: ${{ secrets.REMOTE_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: 22
+        script: |
+          cd /path/to/your/project
+          git pull origin main
+          docker-compose down
+          docker-compose up -d
