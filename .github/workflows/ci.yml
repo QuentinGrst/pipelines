@@ -83,7 +83,10 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: 22
         script: |
+          # Préparer le répertoire du projet sur le serveur
           cd /path/to/your/project
           git pull origin main
+
+          # Relancer les conteneurs Docker
           docker-compose down
           docker-compose up -d
