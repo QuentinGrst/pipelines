@@ -32,6 +32,12 @@ jobs:
           # Ajout de pytest-cov et radon
           pip install pytest-cov radon
 
+      # ----------------------------------------------------------
+      # Étapes "classiques" : flake8, radon, pytest, coverage, etc.
+      # (Tu peux les conserver si tu veux des logs en direct,
+      # ou les supprimer pour ne pas tout exécuter deux fois.)
+      # ----------------------------------------------------------
+
       - name: Lint with flake8
         run: |
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
@@ -68,6 +74,10 @@ jobs:
         run: |
           zip -r docs.zip docs
 
+      # ----------------------------------------------------------
+      # Build & Push Docker image (optionnel)
+      # ----------------------------------------------------------
+
       - name: Build Docker image
         run: |
           if [ "${{ github.ref_name }}" = "main" ]; then
@@ -99,6 +109,9 @@ jobs:
           mkdir -p build
           zip -r build/app_build.zip app
 
+      # ----------------------------------------------------
+      # Étapes pour créer la Release (si besoin) + assets
+      # ----------------------------------------------------
       - name: Create GitHub Release
         id: create_release
         if: contains('main,qualif', github.ref_name)
@@ -132,3 +145,42 @@ jobs:
           asset_content_type: application/zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ----------------------------------------------------
+      # NOUVELLES ÉTAPES : Génération d'un rapport global +
+      # upload en tant qu'artefact GitHub Actions
+      # ----------------------------------------------------
+      - name: Generate Pipeline Report
+        # On rerun flake8, radon, pytest, bandit pour consolider
+        run: |
+          set +e  # On ne veut pas stopper le script si une analyse échoue
+          echo "# Pipeline Report - $(date)" > pipeline_report.txt
+
+          echo "## flake8" >> pipeline_report.txt
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics >> pipeline_report.txt 2>&1
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics >> pipeline_report.txt 2>&1
+          echo "" >> pipeline_report.txt
+
+          echo "## radon (complexité et maintenabilité)" >> pipeline_report.txt
+          echo "### Cyclomatic Complexity" >> pipeline_report.txt
+          radon cc app --total-average >> pipeline_report.txt 2>&1
+          echo "" >> pipeline_report.txt
+          echo "### Maintainability Index" >> pipeline_report.txt
+          radon mi app >> pipeline_report.txt 2>&1
+          echo "" >> pipeline_report.txt
+
+          echo "## Tests + Coverage" >> pipeline_report.txt
+          pytest --cov=app --cov-report=term-missing >> pipeline_report.txt 2>&1
+          echo "" >> pipeline_report.txt
+
+          echo "## Sécurité (bandit)" >> pipeline_report.txt
+          bandit -r app >> pipeline_report.txt 2>&1
+          echo "" >> pipeline_report.txt
+
+          set -e
+
+      - name: Upload Pipeline Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: pipeline-report
+          path: pipeline_report.txt
