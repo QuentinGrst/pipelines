@@ -55,10 +55,27 @@ jobs:
           name: documentation
           path: docs/
 
+      # ----------------------------------
+      # Étape pour construire un artefact
+      # (par exemple un .zip)
+      # ----------------------------------
+      - name: Build artifact (zip)
+        run: |
+          mkdir -p build
+          # Exemple : on zippe tout le dossier app
+          zip -r build/mon_build.zip app
+
+      # ----------------------------------
+      # Étape pour uploader le nouvel artefact
+      # ----------------------------------
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: my-build
+          path: build/mon_build.zip
+
       # ---------------------------
-      # Ici, on peut taguer l'image
-      # selon la branche : 'latest' (prod),
-      # ou 'qualif' (préprod).
+      # Taguer l'image selon la branche
       # ---------------------------
       - name: Build Docker image
         run: |
