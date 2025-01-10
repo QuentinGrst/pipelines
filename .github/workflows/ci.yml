@@ -91,9 +91,9 @@ jobs:
       - name: Create GitHub Release
         id: create_release
         if: contains('main,qualif', github.ref_name)
-        uses: actions/create-release@v1
+        # On utilise la version 'latest' (ou un tag spécifique) :
+        uses: actions/create-release@latest
         with:
-          # On génère un tag unique basé sur la branche et le numéro de run
           tag_name: "v_${{ github.ref_name }}_${{ github.run_number }}"
           release_name: "Release branch ${{ github.ref_name }} (run #${{ github.run_number }})"
           draft: false
@@ -103,7 +103,7 @@ jobs:
 
       - name: Upload Release Asset (docs)
         if: contains('main,qualif', github.ref_name)
-        uses: actions/upload-release-asset@v1
+        uses: actions/upload-release-asset@latest
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./docs.zip
@@ -114,7 +114,7 @@ jobs:
 
       - name: Upload Release Asset (app_build)
         if: contains('main,qualif', github.ref_name)
-        uses: actions/upload-release-asset@v1
+        uses: actions/upload-release-asset@latest
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: build/app_build.zip
