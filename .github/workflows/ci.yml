@@ -11,23 +11,19 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      # 1) Récupération du code
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 2) Installation de Python 3.9
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
 
-      # 3) Installation des dépendances système
       - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential libssl-dev libffi-dev python3-dev
 
-      # 4) Installation des dépendances Python + pytest-cov + radon
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -36,13 +32,11 @@ jobs:
           # Ajout de pytest-cov et radon
           pip install pytest-cov radon
 
-      # 5) Lint du code avec flake8
       - name: Lint with flake8
         run: |
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
-      # 6) Analyse de la complexité (Radon)
       - name: Analyze code complexity (Radon)
         run: |
           echo "=== Cyclomatic Complexity ==="
@@ -50,36 +44,30 @@ jobs:
           echo "=== Maintainability Index ==="
           radon mi app
 
-      # 7) Exécuter les tests avec mesure de couverture
       - name: Run tests with coverage
         run: |
           pytest --cov=app --cov-report=xml --cov-report=term-missing
 
-      # 8) Upload du rapport de couverture en tant qu’artefact
       - name: Upload coverage report
         uses: actions/upload-artifact@v3
         with:
           name: coverage-report
           path: coverage.xml
 
-      # 9) Analyse de sécurité (Bandit)
       - name: Security check with bandit
         run: |
           bandit -r app
 
-      # 10) Génération de la documentation (pydoc)
       - name: Generate documentation with pydoc
         run: |
           mkdir -p docs
           python -m pydoc -w app.main
           mv app.main.html docs/
 
-      # 11) Zipper la documentation
       - name: Zip documentation
         run: |
           zip -r docs.zip docs
 
-      # 12) Construction de l'image Docker
       - name: Build Docker image
         run: |
           if [ "${{ github.ref_name }}" = "main" ]; then
@@ -90,14 +78,12 @@ jobs:
           echo "Build Docker image with tag: $IMAGE_TAG"
           docker build -t quentingrt/pipelines:$IMAGE_TAG .
 
-      # 13) Connexion à Docker Hub
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # 14) Push de l'image Docker vers Docker Hub
       - name: Push Docker image
         run: |
           if [ "${{ github.ref_name }}" = "main" ]; then
@@ -108,15 +94,10 @@ jobs:
           echo "Push Docker image with tag: $IMAGE_TAG"
           docker push quentingrt/pipelines:$IMAGE_TAG
 
-      # 15) Construction d'un artefact supplémentaire (ZIP de l'app)
       - name: Build additional artifact
         run: |
           mkdir -p build
           zip -r build/app_build.zip app
-
-      # ----------------------------------------------------
-      # 16) Création d'une Release GitHub + Upload des assets
-      # ----------------------------------------------------
 
       - name: Create GitHub Release
         id: create_release
