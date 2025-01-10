@@ -2,85 +2,120 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, qualif ]      # Déclencher le workflow sur main et qualif
   pull_request:
-    branches: [ main ]
+    branches: [ main, qualif ]      # Déclencher aussi sur les PR vers main et qualif
 
 jobs:
   build:
-
     runs-on: ubuntu-22.04
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
 
-    - name: Install system dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential libssl-dev libffi-dev python3-dev
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libssl-dev libffi-dev python3-dev
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install -r requirements-dev.txt
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
 
-    - name: Lint with flake8
-      run: |
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      - name: Lint with flake8
+        run: |
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
-    - name: Run tests with pytest
-      run: |
-        pytest
+      - name: Run tests with pytest
+        run: |
+          pytest
 
-    - name: Security check with bandit
-      run: |
-        bandit -r app
+      - name: Security check with bandit
+        run: |
+          bandit -r app
 
-    - name: Generate documentation with pydoc
-      run: |
-        mkdir -p docs
-        python -m pydoc -w app.main
-        mv app.main.html docs/
+      - name: Generate documentation with pydoc
+        run: |
+          mkdir -p docs
+          python -m pydoc -w app.main
+          mv app.main.html docs/
 
-    - name: Upload documentation artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: documentation
-        path: docs/
+      - name: Upload documentation artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: documentation
+          path: docs/
 
-    - name: Build Docker image
-      run: |
-        docker build -t quentingrt/pipelines:latest .
+      # ---------------------------
+      # Ici, on peut taguer l'image
+      # selon la branche : 'latest' (prod),
+      # ou 'qualif' (préprod).
+      # ---------------------------
+      - name: Build Docker image
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            IMAGE_TAG="latest"
+          else
+            IMAGE_TAG="qualif"
+          fi
+          echo "Build Docker image with tag: $IMAGE_TAG"
+          docker build -t quentingrt/pipelines:$IMAGE_TAG .
 
-    - name: Log in to Docker Hub
-      uses: docker/login-action@v2
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Push Docker image
-      run: |
-        docker push quentingrt/pipelines:latest
+      - name: Push Docker image
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            IMAGE_TAG="latest"
+          else
+            IMAGE_TAG="qualif"
+          fi
+          echo "Push Docker image with tag: $IMAGE_TAG"
+          docker push quentingrt/pipelines:$IMAGE_TAG
 
-    - name: Deploy to remote server
-      if: github.ref == 'refs/heads/main'
-      uses: appleboy/ssh-action@v0.1.6
-      with:
-        host: ${{ secrets.REMOTE_HOST }}
-        username: root
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        port: 2222
-        script: |
-          mkdir -p /path/to/your/project
-          cd /path/to/your/project
-          git pull origin main
-          docker-compose down
-          docker-compose up -d
+      # Déploiement pour la branche main (prod)
+      - name: Deploy to remote server (PROD)
+        if: github.ref_name == 'main'
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ secrets.REMOTE_HOST_PROD }}
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 2222
+          script: |
+            echo "Déploiement en production (main)..."
+            mkdir -p /path/to/your/project
+            cd /path/to/your/project
+            git pull origin main
+            docker-compose down
+            docker-compose up -d
+
+      # Déploiement pour la branche qualif (préprod / QA)
+      - name: Deploy to remote server (QUALIF)
+        if: github.ref_name == 'qualif'
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ secrets.REMOTE_HOST_QUALIF }}
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 2222
+          script: |
+            echo "Déploiement en qualification (qualif)..."
+            mkdir -p /path/to/your/project-qualif
+            cd /path/to/your/project-qualif
+            git pull origin qualif
+            docker-compose down
+            docker-compose up -d
