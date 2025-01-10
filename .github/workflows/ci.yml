@@ -2,9 +2,9 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [ main, qualif ]      # Déclencher le workflow sur main et qualif
+    branches: [ main, qualif ]
   pull_request:
-    branches: [ main, qualif ]      # Déclencher aussi sur les PR vers main et qualif
+    branches: [ main, qualif ]
 
 jobs:
   build:
@@ -49,14 +49,10 @@ jobs:
           python -m pydoc -w app.main
           mv app.main.html docs/
 
-      # On uploade la documentation pour la récupérer si besoin
-      - name: Upload documentation artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: documentation
-          path: docs/
+      - name: Zip documentation
+        run: |
+          zip -r docs.zip docs
 
-      # Si tu veux toujours builder une image Docker...
       - name: Build Docker image
         run: |
           if [ "${{ github.ref_name }}" = "main" ]; then
@@ -86,12 +82,43 @@ jobs:
       - name: Build additional artifact
         run: |
           mkdir -p build
-          # Supposons qu'on archive le dossier app
           zip -r build/app_build.zip app
 
-      # On uploade ce second artefact
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v3
+      # ----------------------------------------------------
+      # Étapes pour créer la Release et y téléverser les assets
+      # ----------------------------------------------------
+
+      - name: Create GitHub Release
+        id: create_release
+        if: contains('main,qualif', github.ref_name)
+        uses: actions/create-release@v1
         with:
-          name: app-build
-          path: build/app_build.zip
+          # On génère un tag unique basé sur la branche et le numéro de run
+          tag_name: "v_${{ github.ref_name }}_${{ github.run_number }}"
+          release_name: "Release branch ${{ github.ref_name }} (run #${{ github.run_number }})"
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Release Asset (docs)
+        if: contains('main,qualif', github.ref_name)
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./docs.zip
+          asset_name: docs.zip
+          asset_content_type: application/zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Release Asset (app_build)
+        if: contains('main,qualif', github.ref_name)
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: build/app_build.zip
+          asset_name: app_build.zip
+          asset_content_type: application/zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
