@@ -49,34 +49,14 @@ jobs:
           python -m pydoc -w app.main
           mv app.main.html docs/
 
+      # On uploade la documentation pour la récupérer si besoin
       - name: Upload documentation artifact
         uses: actions/upload-artifact@v3
         with:
           name: documentation
           path: docs/
 
-      # ----------------------------------
-      # Étape pour construire un artefact
-      # (par exemple un .zip)
-      # ----------------------------------
-      - name: Build artifact (zip)
-        run: |
-          mkdir -p build
-          # Exemple : on zippe tout le dossier app
-          zip -r build/mon_build.zip app
-
-      # ----------------------------------
-      # Étape pour uploader le nouvel artefact
-      # ----------------------------------
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: my-build
-          path: build/mon_build.zip
-
-      # ---------------------------
-      # Taguer l'image selon la branche
-      # ---------------------------
+      # Si tu veux toujours builder une image Docker...
       - name: Build Docker image
         run: |
           if [ "${{ github.ref_name }}" = "main" ]; then
@@ -103,36 +83,15 @@ jobs:
           echo "Push Docker image with tag: $IMAGE_TAG"
           docker push quentingrt/pipelines:$IMAGE_TAG
 
-      # Déploiement pour la branche main (prod)
-      - name: Deploy to remote server (PROD)
-        if: github.ref_name == 'main'
-        uses: appleboy/ssh-action@v0.1.6
-        with:
-          host: ${{ secrets.REMOTE_HOST_PROD }}
-          username: root
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: 2222
-          script: |
-            echo "Déploiement en production (main)..."
-            mkdir -p /path/to/your/project
-            cd /path/to/your/project
-            git pull origin main
-            docker-compose down
-            docker-compose up -d
+      - name: Build additional artifact
+        run: |
+          mkdir -p build
+          # Supposons qu'on archive le dossier app
+          zip -r build/app_build.zip app
 
-      # Déploiement pour la branche qualif (préprod / QA)
-      - name: Deploy to remote server (QUALIF)
-        if: github.ref_name == 'qualif'
-        uses: appleboy/ssh-action@v0.1.6
+      # On uploade ce second artefact
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v3
         with:
-          host: ${{ secrets.REMOTE_HOST_QUALIF }}
-          username: root
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: 2222
-          script: |
-            echo "Déploiement en qualification (qualif)..."
-            mkdir -p /path/to/your/project-qualif
-            cd /path/to/your/project-qualif
-            git pull origin qualif
-            docker-compose down
-            docker-compose up -d
+          name: app-build
+          path: build/app_build.zip
